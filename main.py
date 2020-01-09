@@ -64,7 +64,7 @@ async def removesub(ctx, *, sub : str=None):
     else:
         the_user = Config.USERS.find_one({'user_id' : ctx.author.id})
         if the_user == None:
-            Config.USERS.insert_one({"user_id" : ctx.author.id, "subs" : None})
+            Config.USERS.insert_one({"user_id" : ctx.author.id, subs : []})
             embed = discord.Embed(
                 title = "Subreddits",
                 description = "You don't have any subreddits\n use m!addsub <SubReddit> to add a SubReddit",
@@ -72,20 +72,7 @@ async def removesub(ctx, *, sub : str=None):
             )
             await ctx.send(embed = embed)
         else:
-            string = the_user['subs']
-            predit = string.replace("+"," ")
-            string = predit.replace(sub, "")
-            strong = string.replace(" ", "+")
-            print(strong[len(strong) - 1 : ])
-            print(strong[ : len(strong) - 1])
-            if strong[0:1] == "+":
-                upload = strong[1:]
-                Config.USERS.update_one({"user_id" : ctx.author.id}, {"$set": {"subs" : upload}})
-            elif strong[len(strong) - 1 : ] == "+":
-                upload = strong[ : len(strong) - 1]
-                Config.USERS.update_one({"user_id" : ctx.author.id}, {"$set": {"subs" : upload}})
-            else:
-                Config.USERS.update_one({"user_id" : ctx.author.id}, {"$set": {"subs" : strong}})
+            Config.USERS.update_one({"user_id": ctx.author.id}, { $pull: {subs: {$in:[sub]}}})
 
 
 
@@ -101,13 +88,22 @@ async def mysubs(ctx):
         await ctx.send(embed = embed)
     else:
         the_doc = Config.USERS.find_one({'user_id': ctx.author.id})
-        string = the_doc['subs']
-        newstring = string.replace("+","\n")
-        embed = discord.Embed(
-            title = "Subreddits",
-            description = "You Subreddits:\n" + newstring,
-            color = 0xE1306C
-        )
+        newstring = ""
+        array = the_docs["subs"]
+        if array != None:
+            for ele in array:
+                newstring += ele + "\n"
+            embed = discord.Embed(
+                title = "Subreddits",
+                description = "You Subreddits:\n" + newstring,
+                color = 0xE1306C
+            )
+        else:
+            embed = discord.Embed(
+                title = "Subreddits",
+                description = "You don't have any subreddits\n use m!addsub <SubReddit> to add a SubReddit",
+                color = 0xE1306C
+            )
         await ctx.send(embed = embed)
 
 @bot.command()
@@ -132,9 +128,9 @@ async def addsub(ctx, *, subreddit :str=None):
             the_doc = Config.USERS.find_one({'user_id': ctx.author.id})
             currentlist = the_doc['subs']
             if currentlist == None:
-                Config.USERS.update_one({"user_id" : ctx.author.id}, {"$set": {"subs" : subreddit}})
+                Config.USERS.update_one({"user_id" : ctx.author.id}, {"$set": {"subs" : [subreddit]}})
             else:
-                Config.USERS.update_one({"user_id" : ctx.author.id}, {"$set": {"subs" : currentlist + "+" + subreddit}})
+                Config.USERS.update_one({"user_id" : ctx.author.id}, {"$push": {"subs" : subreddit}})
             embed = discord.Embed(
                 title = "Added Subreddit",
                 description = "Subreddit `" + subreddit + "` Added to your profile!",
@@ -155,7 +151,14 @@ async def image(ctx):
     msg = await ctx.send("Loading....")
     loginReddit()
     the_doc = Config.USERS.find_one({'user_id': ctx.author.id})
-    the_meme = getPhotoFromReddit(the_doc['subs'])
+    array = the_doc['subs']
+    str = ""
+    for ele in array:
+        str += ele + "+"
+    if str[len(str) - 1 : ] == "+":
+        ready = str[ : len(str) - 1]
+
+    the_meme = getPhotoFromReddit(ready)
     download_from_url("photo.jpg", the_meme)
     embed = discord.Embed(
     title = "Image",
