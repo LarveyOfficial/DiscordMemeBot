@@ -52,6 +52,42 @@ def download_from_url(path, url):
         print("Image downloaded.")
 
 
+@bot.command()
+async def removesub(ctx, *, sub : str=None):
+    if sub is None:
+        embed = discord.Embed(
+            title = "ERROR",
+            description = "Please provide a subreddit",
+            color = 0xED4337
+        )
+        await ctx.send(embed = embed)
+    else:
+        the_user = Config.USERS.find_one({'user_id' : ctx.author.id})
+        if the_user == None:
+            Config.USERS.insert_one({"user_id" : ctx.author.id, "subs" : None})
+            embed = discord.Embed(
+                title = "Subreddits",
+                description = "You don't have any subreddits\n use m!addsub <SubReddit> to add a SubReddit",
+                color = 0xE1306C
+            )
+            await ctx.send(embed = embed)
+        else:
+            string = the_user['subs']
+            predit = string.replace("+"," ")
+            string = predit.replace(sub, "")
+            strong = string.replace(" ", "+")
+            print(strong[len(strong) - 1 : ])
+            print(strong[ : len(strong) - 1])
+            if strong[0:1] == "+":
+                upload = strong[1:]
+                Config.USERS.update_one({"user_id" : ctx.author.id}, {"$set": {"subs" : upload}})
+            elif strong[len(strong) - 1 : ] == "+":
+                upload = strong[ : len(strong) - 1]
+                Config.USERS.update_one({"user_id" : ctx.author.id}, {"$set": {"subs" : upload}})
+            else:
+                Config.USERS.update_one({"user_id" : ctx.author.id}, {"$set": {"subs" : strong}})
+
+
 
 @bot.command()
 async def mysubs(ctx):
