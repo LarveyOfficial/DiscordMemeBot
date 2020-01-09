@@ -68,11 +68,17 @@ async def removesub(ctx, *, sub : str=None):
             embed = discord.Embed(
                 title = "Subreddits",
                 description = "You don't have any subreddits\n use m!addsub <SubReddit> to add a SubReddit",
-                color = 0xE1306C
+                color = 0xED4337
             )
             await ctx.send(embed = embed)
         else:
             Config.USERS.update_one({"user_id": ctx.author.id}, { $pull: {subs: {$in:[sub]}}})
+            embed = discord.Embed(
+                title = "Subreddits",
+                description = "Deleted the SubReddit `" + sub + "` from your subreddit list.",
+                color = 0xE1306C
+            )
+            await ctx.send(embed = embed)
 
 
 
