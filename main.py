@@ -10,6 +10,7 @@ from prawcore import NotFound
 
 reddit = None
 global thesubreddit
+global fileend
 
 bot = commands.Bot(command_prefix = "m!", case_insensitive = True)
 helpstring = "**De Commands**\n`m!awww` - Random Picture of a Dog/Corgi\n`m!addsub <SubReddit>` - add a SubReddit to your list of SubReddits\n`m!mysubs` - List your SubReddits\n`m!removesub <Subreddit>` - Remove a SubReddit from your list\n`m!image` - Get an image from your list of SubReddits\n`m!purge` - Clears your subreddit list"
@@ -28,6 +29,7 @@ def loginReddit():
 def getPhotoFromReddit(sub):
     global reddit
     global thesubreddit
+    global fileend
     print("Getting an image...")
     submissions = reddit.subreddit(sub).hot(limit = 100)
     i = random.randint(0, 100)
@@ -36,6 +38,11 @@ def getPhotoFromReddit(sub):
         i -= 1
         if i <= 0:
             print("Picked " + submission.url)
+            strong = str(submission.url)
+            if strong[-4:] == ".gif":
+                fileend = ".gif"
+            else:
+                fileend = ".jpg"
             thesubreddit = str(submission.subreddit)
             return submission.url
 
@@ -222,6 +229,7 @@ async def addsub(ctx, *, subreddit :str=None):
 
 @bot.command(aliases = ["meme"])
 async def image(ctx):
+    global fileend
     msg = await ctx.send("Loading....")
     loginReddit()
     the_doc = Config.USERS.find_one({'user_id': ctx.author.id})
@@ -233,15 +241,16 @@ async def image(ctx):
         ready = str[ : len(str) - 1]
 
     the_meme = getPhotoFromReddit(ready)
-    download_from_url("photo.jpg", the_meme)
+    thefile = f"{ctx.author.id}{fileend}"
+    download_from_url(thefile, the_meme)
     embed = discord.Embed(
     title = thesubreddit,
     url = the_meme,
     timestamp = datetime.datetime.utcnow(),
     color = 0xE1306C
     )
-    file = discord.File("photo.jpg", filename = "photo.jpg")
-    embed.set_image(url = "attachment://photo.jpg")
+    file = discord.File(thefile, filename = thefile)
+    embed.set_image(url = "attachment://" + thefile)
     await msg.delete()
     try:
         await ctx.send(embed = embed, file = file)
@@ -252,22 +261,23 @@ async def image(ctx):
             color = 0xED4337
         )
         await ctx.send(embed = embed)
-    os.remove("photo.jpg")
+    os.remove(thefile)
 
 @bot.command(aliases = ["aw", "aww", "awwww"])
 async def awww(ctx):
     msg = await ctx.send("Loading....")
     loginReddit()
     the_meme = getPhotoFromReddit("corgi+dogpictures")
-    download_from_url("photo.jpg", the_meme)
+    thefile = str(ctx.author.id) + fileend
+    download_from_url(thefile, the_meme)
     embed = discord.Embed(
     title = thesubreddit,
     url = the_meme,
     timestamp = datetime.datetime.utcnow(),
     color = 0xE1306C
     )
-    file = discord.File("photo.jpg", filename = "photo.jpg")
-    embed.set_image(url = "attachment://photo.jpg")
+    file = discord.File(thefile, filename = thefile)
+    embed.set_image(url = "attachment://" + thefile)
     await msg.delete()
     try:
         await ctx.send(embed = embed, file = file)
@@ -278,7 +288,7 @@ async def awww(ctx):
             color = 0xED4337
         )
         await ctx.send(embed = embed)
-    os.remove("photo.jpg")
+    os.remove(thefile)
 
 @bot.event
 async def on_ready():
